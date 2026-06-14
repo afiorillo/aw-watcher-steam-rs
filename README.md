@@ -1,5 +1,7 @@
 # aw-watcher-steam-rs
 
+[![CI](https://github.com/afiorillo/aw-watcher-steam-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/afiorillo/aw-watcher-steam-rs/actions/workflows/ci.yml)
+
 An [ActivityWatch](https://activitywatch.net/) [watcher](https://docs.activitywatch.net/en/latest/watchers.html) for Steam activity.
 Inspired by <https://github.com/Edwardsoen/aw-watcher-steam>, and written in Rust, hence the suffix.
 
@@ -139,10 +141,10 @@ toolchain on your host:
 
 ```sh
 # Run it directly:
-nix run github:clawde/aw-watcher-steam-rs
+nix run github:afiorillo/aw-watcher-steam-rs
 
 # Or install into your profile:
-nix profile install github:clawde/aw-watcher-steam-rs
+nix profile install github:afiorillo/aw-watcher-steam-rs
 ```
 
 To run it as a managed service, use the provided modules (they define a systemd
@@ -152,7 +154,7 @@ To run it as a managed service, use the provided modules (they define a systemd
 
 ```nix
 {
-  inputs.aw-watcher-steam-rs.url = "github:clawde/aw-watcher-steam-rs";
+  inputs.aw-watcher-steam-rs.url = "github:afiorillo/aw-watcher-steam-rs";
 
   # in your home-manager configuration:
   imports = [ inputs.aw-watcher-steam-rs.homeManagerModules.default ];
@@ -171,6 +173,10 @@ To run it as a managed service, use the provided modules (they define a systemd
   services.aw-watcher-steam-rs.enable = true;
 }
 ```
+
+A complete, copy-pasteable example that wires this watcher into a full
+ActivityWatch stack (server + official watchers) via home-manager is in
+[`packaging/home-manager/activitywatch.nix`](packaging/home-manager/activitywatch.nix).
 
 The flake also exposes `packages.default`, an `overlays.default`, and a dev shell
 (`nix develop`).

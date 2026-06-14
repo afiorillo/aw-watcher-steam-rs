@@ -1,6 +1,6 @@
 [Unit]
 Description=ActivityWatch Steam watcher (aw-watcher-steam-rs)
-Documentation=https://github.com/clawde/aw-watcher-steam-rs
+Documentation=https://github.com/afiorillo/aw-watcher-steam-rs
 # The watcher only needs the network for the optional Steam Web API layer;
 # local detection works offline, so these are "want", not "require".
 After=network-online.target

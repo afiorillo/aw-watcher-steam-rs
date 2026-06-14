@@ -36,7 +36,7 @@
 
           meta = with pkgs.lib; {
             description = "An ActivityWatch watcher for Steam activity";
-            homepage = "https://github.com/clawde/aw-watcher-steam-rs";
+            homepage = "https://github.com/afiorillo/aw-watcher-steam-rs";
             license = licenses.agpl3Plus;
             mainProgram = "aw-watcher-steam-rs";
             platforms = platforms.unix ++ platforms.windows;
@@ -109,7 +109,13 @@
             systemd.user.services.aw-watcher-steam-rs = {
               Unit = {
                 Description = "ActivityWatch Steam watcher (aw-watcher-steam-rs)";
-                After = [ "network-online.target" ];
+                # Order after the network and (if present) the aw-server user
+                # service. Ordering against a unit that isn't running is a no-op,
+                # so this is safe even if you run ActivityWatch some other way.
+                After = [
+                  "network-online.target"
+                  "aw-server.service"
+                ];
                 Wants = [ "network-online.target" ];
               };
               Service = {
