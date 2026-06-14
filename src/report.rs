@@ -7,9 +7,10 @@
 //!   "appid": <app_id>, "install-dir": "<installdir>", "source": "local|api" }
 //! ```
 
-use aw_client_rust::{AwClient, Event};
 use chrono::Utc;
 use serde_json::{Map, Value, json};
+
+use crate::aw::{AwClient, Event};
 
 use crate::steam::GameInfo;
 
@@ -69,7 +70,6 @@ pub fn friends_event(playing: &[(String, String)]) -> Event {
 /// heartbeat merging.
 fn event_now(data: Map<String, Value>) -> Event {
     Event {
-        id: None,
         timestamp: Utc::now(),
         duration: chrono::Duration::zero(),
         data,

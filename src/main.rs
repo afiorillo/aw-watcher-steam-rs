@@ -5,6 +5,7 @@
 //! Layer 2 (optional, needs a Steam Web API key): also report your own and your
 //! friends' current games.
 
+mod aw;
 mod config;
 mod process;
 mod report;
@@ -17,8 +18,9 @@ use std::error::Error;
 use std::thread;
 use std::time::Duration;
 
-use aw_client_rust::AwClient;
 use clap::{Parser, Subcommand};
+
+use crate::aw::AwClient;
 
 #[derive(Parser)]
 #[command(name = "aw-watcher-steam-rs", version, about)]
@@ -96,11 +98,7 @@ fn run_watcher() -> Result<(), Box<dyn Error>> {
     let cfg = config::load()?;
     init_logger(cfg.log_level.as_deref());
 
-    let client = AwClient::new(
-        &cfg.server.host,
-        &cfg.server.port.to_string(),
-        "aw-watcher-steam",
-    );
+    let client = AwClient::new(&cfg.server.host, cfg.server.port, "aw-watcher-steam");
     let reporter = report::Reporter::new(&client)?;
     log::info!(
         "reporting to aw-server at {}:{} (host {})",
