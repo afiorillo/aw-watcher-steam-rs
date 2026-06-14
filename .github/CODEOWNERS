@@ -1,0 +1,4 @@
+# Code ownership for aw-watcher-steam-rs.
+# @afiorillo owns everything in this repository; this requests their review on
+# every pull request by default.
+* @afiorillo
