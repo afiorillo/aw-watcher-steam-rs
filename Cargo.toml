@@ -2,5 +2,23 @@
 name = "aw-watcher-steam-rs"
 version = "0.1.0"
 edition = "2024"
+description = "An ActivityWatch watcher for Steam activity"
+license = "AGPL-3.0-or-later"
 
 [dependencies]
+aw-client-rust = "0.1.0"
+chrono = "0.4.45"
+clap = { version = "4.6.1", features = ["derive"] }
+directories = "6.0.0"
+env_logger = "0.11.10"
+log = "0.4.32"
+reqwest = { version = "0.13.4", features = ["native-tls", "blocking", "json", "hickory-dns"], optional = true }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.150"
+steamlocate = "2.1.0"
+sysinfo = "0.38.4"
+toml = "1.1.2"
+
+[features]
+default = ["steam-api"]
+steam-api = ["dep:reqwest"]
