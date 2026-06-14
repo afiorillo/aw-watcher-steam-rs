@@ -1,0 +1,22 @@
+[Unit]
+Description=ActivityWatch Steam watcher (aw-watcher-steam-rs)
+Documentation=https://github.com/clawde/aw-watcher-steam-rs
+# The watcher only needs the network for the optional Steam Web API layer;
+# local detection works offline, so these are "want", not "require".
+After=network-online.target
+Wants=network-online.target
+# If you run aw-server as a systemd user service, you can also order after it:
+# After=aw-server.service
+
+[Service]
+# Adjust this to wherever the binary lives. Examples:
+#   %h/.cargo/bin/aw-watcher-steam-rs        (cargo install)
+#   /usr/local/bin/aw-watcher-steam-rs       (manual install)
+ExecStart=%h/.cargo/bin/aw-watcher-steam-rs
+Restart=on-failure
+RestartSec=10
+# Optional: override the log level (or set log_level in the config file).
+# Environment=RUST_LOG=info
+
+[Install]
+WantedBy=default.target

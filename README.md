@@ -112,24 +112,68 @@ If Steam can't be located on an unusual layout, please open an issue with your s
 
 ## Installation & usage
 
-Requires a running ActivityWatch server. Then:
-
-```sh
-cargo build --release
-./target/release/aw-watcher-steam-rs
-```
+Requires a running ActivityWatch server.
 
 The watcher runs with no configuration at all. It logs one line when a game starts,
 stops, or changes (at `info` level); per-tick heartbeats are logged at `debug`.
 Verbosity is controlled by the `RUST_LOG` environment variable (e.g.
 `RUST_LOG=debug`), or the `log_level` config key (see below).
 
-A minimal local-only binary (no Steam Web API / friends support, fewer dependencies)
-can be built with:
+### With Cargo
+
+```sh
+cargo install --path .          # or: cargo build --release
+aw-watcher-steam-rs
+```
+
+A minimal local-only binary (no Steam Web API / friends support, fewer dependencies):
 
 ```sh
 cargo build --release --no-default-features
 ```
+
+### With Nix (flake)
+
+This repo is a flake, so you can run or install it reproducibly without a Rust
+toolchain on your host:
+
+```sh
+# Run it directly:
+nix run github:clawde/aw-watcher-steam-rs
+
+# Or install into your profile:
+nix profile install github:clawde/aw-watcher-steam-rs
+```
+
+To run it as a managed service, use the provided modules (they define a systemd
+**user** service — the watcher must run as your user to see your processes/Steam).
+
+**home-manager** (recommended):
+
+```nix
+{
+  inputs.aw-watcher-steam-rs.url = "github:clawde/aw-watcher-steam-rs";
+
+  # in your home-manager configuration:
+  imports = [ inputs.aw-watcher-steam-rs.homeManagerModules.default ];
+  services.aw-watcher-steam-rs = {
+    enable = true;
+    # logLevel = "debug";   # optional, sets RUST_LOG
+  };
+}
+```
+
+**NixOS** (installs the package and a per-user service):
+
+```nix
+{
+  imports = [ inputs.aw-watcher-steam-rs.nixosModules.default ];
+  services.aw-watcher-steam-rs.enable = true;
+}
+```
+
+The flake also exposes `packages.default`, an `overlays.default`, and a dev shell
+(`nix develop`).
 
 ### Configuration (optional)
 
@@ -167,14 +211,42 @@ poll_interval_seconds = 60
 track_friends = true
 ```
 
-## Development
+## Running as a service (systemd, non-Nix)
 
-This repo uses a Nix dev shell (`shell.nix`) providing the Rust toolchain plus
-`openssl`/`pkg-config` (needed by reqwest's TLS for the Steam Web API layer):
+The watcher should run as a **systemd user service** so it runs in your session and
+can see your processes and Steam. A ready-to-edit unit is in
+[`packaging/systemd/aw-watcher-steam-rs.service`](packaging/systemd/aw-watcher-steam-rs.service):
 
 ```sh
-nix-shell --run 'cargo test'
-nix-shell --run 'cargo clippy --all-targets'
+mkdir -p ~/.config/systemd/user
+cp packaging/systemd/aw-watcher-steam-rs.service ~/.config/systemd/user/
+# Edit ExecStart in the copied file to point at your binary
+# (e.g. ~/.cargo/bin/aw-watcher-steam-rs).
+
+systemctl --user daemon-reload
+systemctl --user enable --now aw-watcher-steam-rs.service
+
+# Follow logs:
+journalctl --user -u aw-watcher-steam-rs -f
+
+# Optional: keep it running without an active login session:
+loginctl enable-linger "$USER"
+```
+
+(Nix users should use the home-manager / NixOS modules above instead.)
+
+## Development
+
+The dev environment is defined by the flake (`flake.nix`) and provides the Rust
+toolchain plus `openssl`/`pkg-config` (needed by reqwest's TLS for the Steam Web
+API layer). Enter it with `nix develop` (or via direnv — the repo's `.envrc` uses
+`use flake`):
+
+```sh
+nix develop -c cargo test
+nix develop -c cargo test --no-default-features   # local-only build
+nix develop -c cargo clippy --all-targets
+nix develop -c cargo fmt --check
 ```
 
 ## Contributing
