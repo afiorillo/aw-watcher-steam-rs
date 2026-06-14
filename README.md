@@ -108,8 +108,10 @@ cargo build --release
 ./target/release/aw-watcher-steam-rs
 ```
 
-The watcher runs with no configuration at all. Logging verbosity is controlled with
-`RUST_LOG` (e.g. `RUST_LOG=debug`).
+The watcher runs with no configuration at all. It logs one line when a game starts,
+stops, or changes (at `info` level); per-tick heartbeats are logged at `debug`.
+Verbosity is controlled by the `RUST_LOG` environment variable (e.g.
+`RUST_LOG=debug`), or the `log_level` config key (see below).
 
 A minimal local-only binary (no Steam Web API / friends support, fewer dependencies)
 can be built with:
@@ -135,7 +137,11 @@ The file lives at `<config-dir>/activitywatch/aw-watcher-steam/config.toml`
 (e.g. `~/.config/...` on Linux). Example:
 
 ```toml
-poll_interval_seconds = 5
+poll_interval_seconds = 15
+
+# Log verbosity: "error", "warn", "info", "debug", "trace".
+# RUST_LOG overrides this if set.
+log_level = "info"
 
 [server]
 host = "localhost"

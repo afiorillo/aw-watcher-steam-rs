@@ -20,6 +20,10 @@ pub struct Config {
     /// Disable local process scanning entirely (rely only on the optional Steam
     /// Web API layer). Lets privacy-conscious users opt out of process reads.
     pub disable_process_scan: bool,
+    /// Log verbosity filter (e.g. `"info"`, `"debug"`, `"warn"`, or a per-module
+    /// directive like `"aw_watcher_steam_rs=debug"`). The `RUST_LOG` environment
+    /// variable, if set, takes precedence over this. `None` means `"info"`.
+    pub log_level: Option<String>,
     /// aw-server connection settings.
     pub server: ServerConfig,
     /// Optional Steam Web API layer. `None` (section absent) keeps the watcher
@@ -60,6 +64,7 @@ impl Default for Config {
         Config {
             poll_interval_seconds: 15,
             disable_process_scan: false,
+            log_level: None,
             server: ServerConfig::default(),
             steam_api: None,
         }
@@ -118,6 +123,10 @@ const EXAMPLE_CONFIG: &str = r#"# Configuration for aw-watcher-steam-rs
 # Set to true to disable local process scanning entirely and rely only on the
 # Steam Web API layer below.
 # disable_process_scan = false
+
+# Log verbosity: "error", "warn", "info", "debug", or "trace". The RUST_LOG
+# environment variable, if set, overrides this.
+# log_level = "info"
 
 # [server]
 # host = "localhost"
@@ -196,7 +205,17 @@ mod tests {
     fn example_config_parses_as_empty() {
         // All lines are comments, so it must parse and equal the defaults.
         let c: Config = toml::from_str(EXAMPLE_CONFIG).unwrap();
-        assert_eq!(c.poll_interval_seconds, 5);
+        assert_eq!(
+            c.poll_interval_seconds,
+            Config::default().poll_interval_seconds
+        );
         assert!(c.steam_api.is_none());
+        assert!(c.log_level.is_none());
+    }
+
+    #[test]
+    fn log_level_is_configurable() {
+        let c: Config = toml::from_str("log_level = \"debug\"").unwrap();
+        assert_eq!(c.log_level.as_deref(), Some("debug"));
     }
 }

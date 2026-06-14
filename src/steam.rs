@@ -24,6 +24,29 @@ pub struct GameCache {
     entries: Vec<(PathBuf, GameInfo)>,
 }
 
+/// AppIDs of Steam infrastructure (runtimes, redistributables) that install
+/// under `steamapps/common/` and run *alongside* a game but aren't games. On
+/// Linux a game launches inside one of these wrappers, so without filtering we
+/// would match the wrapper's process (e.g. "Steam Linux Runtime 2.0 (soldier)",
+/// 1391110) instead of the actual game.
+const TOOL_APP_IDS: &[u32] = &[
+    228980,  // Steamworks Common Redistributables
+    1070560, // Steam Linux Runtime 1.0 (scout)
+    1391110, // Steam Linux Runtime 2.0 (soldier)
+    1628350, // Steam Linux Runtime 3.0 (sniper)
+    1826330, // Proton EasyAntiCheat Runtime
+];
+
+/// Whether an app is Steam infrastructure rather than a game. The `install_dir`
+/// patterns are the robust safety net: they catch every Proton and runtime
+/// version without having to enumerate each one's AppID.
+fn is_steam_tool(app_id: u32, install_dir: &str) -> bool {
+    TOOL_APP_IDS.contains(&app_id)
+        || install_dir.starts_with("Proton")
+        || install_dir.starts_with("SteamLinuxRuntime")
+        || install_dir == "Steamworks Shared"
+}
+
 impl GameCache {
     /// Build a cache from explicit entries. Used by [`build`](Self::build) and
     /// directly by tests.
@@ -42,6 +65,14 @@ impl GameCache {
                 Ok(libraries) => {
                     for library in libraries.flatten() {
                         for app in library.apps().flatten() {
+                            if is_steam_tool(app.app_id, &app.install_dir) {
+                                log::debug!(
+                                    "skipping Steam tool: {} ({})",
+                                    app.install_dir,
+                                    app.app_id
+                                );
+                                continue;
+                            }
                             let dir = library.resolve_app_dir(&app);
                             let name = app.name.clone().unwrap_or_else(|| app.install_dir.clone());
                             entries.push((
@@ -117,6 +148,19 @@ mod tests {
     fn no_match_for_non_steam_process() {
         let cache = sample_cache();
         assert!(cache.match_exe(Path::new("/usr/bin/firefox")).is_none());
+    }
+
+    #[test]
+    fn steam_tools_are_recognized() {
+        // By AppID and by install-dir pattern (robust across versions).
+        assert!(is_steam_tool(1391110, "SteamLinuxRuntime_soldier"));
+        assert!(is_steam_tool(1628350, "SteamLinuxRuntime_sniper"));
+        assert!(is_steam_tool(228980, "Steamworks Shared"));
+        assert!(is_steam_tool(0, "Proton 9.0 (Beta)"));
+        assert!(is_steam_tool(0, "SteamLinuxRuntime"));
+        // Real games are not tools.
+        assert!(!is_steam_tool(413150, "Stardew Valley"));
+        assert!(!is_steam_tool(400, "Portal"));
     }
 
     #[test]

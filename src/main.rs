@@ -44,22 +44,34 @@ enum Command {
 }
 
 fn main() {
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
-
     let cli = Cli::parse();
     let result = match cli.command {
         Some(Command::Config {
             generate,
             path,
             force,
-        }) => run_config(generate, path, force),
+        }) => {
+            init_logger(None);
+            run_config(generate, path, force)
+        }
+        // run_watcher initializes logging itself once it has read the config, so
+        // the file's `log_level` can take effect.
         None => run_watcher(),
     };
 
     if let Err(e) = result {
-        log::error!("{e}");
+        // Use eprintln rather than log so a failure before/around logger setup
+        // (e.g. an unparseable config) is still reported.
+        eprintln!("error: {e}");
         std::process::exit(1);
     }
+}
+
+/// Initialize logging. Precedence: `RUST_LOG` env var > config `log_level` >
+/// `"info"`. Safe to call once.
+fn init_logger(config_level: Option<&str>) {
+    let default = config_level.unwrap_or("info").to_string();
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(default)).init();
 }
 
 /// Handle the `config` subcommand.
@@ -82,6 +94,7 @@ fn run_config(generate: bool, path: bool, force: bool) -> Result<(), Box<dyn Err
 /// Run the watcher loop. Never returns under normal operation.
 fn run_watcher() -> Result<(), Box<dyn Error>> {
     let cfg = config::load()?;
+    init_logger(cfg.log_level.as_deref());
 
     let client = AwClient::new(
         &cfg.server.host,
@@ -114,6 +127,7 @@ fn run_watcher() -> Result<(), Box<dyn Error>> {
             "no installed Steam games found — local detection will report nothing until a game is installed (is Steam installed and have you launched it?)"
         );
     }
+    let mut current_game: Option<steam::GameInfo> = None;
     let mut iter: u64 = 0;
 
     loop {
@@ -123,6 +137,7 @@ fn run_watcher() -> Result<(), Box<dyn Error>> {
 
         if !cfg.disable_process_scan {
             let game = scanner.current_game(&cache);
+            log_game_change(&mut current_game, game.as_ref());
             if let Err(e) = reporter.heartbeat_game(game.as_ref(), "local", pulsetime) {
                 log::warn!("failed to send game heartbeat: {e}");
             }
@@ -133,6 +148,28 @@ fn run_watcher() -> Result<(), Box<dyn Error>> {
         iter = iter.wrapping_add(1);
         thread::sleep(Duration::from_secs(poll));
     }
+}
+
+/// Log game start/stop/switch transitions at `info` level. The steady-state
+/// per-tick heartbeat stays at `debug` (see [`report::Reporter::heartbeat_game`]),
+/// so default-verbosity logs show one line per session change, not per poll.
+fn log_game_change(current: &mut Option<steam::GameInfo>, detected: Option<&steam::GameInfo>) {
+    let changed = current.as_ref().map(|c| c.app_id) != detected.map(|d| d.app_id);
+    if !changed {
+        return;
+    }
+    match (current.as_ref(), detected) {
+        (None, Some(now)) => log::info!("now playing: {} (appid {})", now.name, now.app_id),
+        (Some(prev), Some(now)) => log::info!(
+            "now playing: {} (appid {}) [was: {}]",
+            now.name,
+            now.app_id,
+            prev.name
+        ),
+        (Some(prev), None) => log::info!("stopped playing: {} (appid {})", prev.name, prev.app_id),
+        (None, None) => {}
+    }
+    *current = detected.cloned();
 }
 
 // --- Layer 2: Steam Web API (self + friends), compiled in only with `steam-api` ---
