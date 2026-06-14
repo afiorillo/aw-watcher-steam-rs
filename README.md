@@ -55,6 +55,17 @@ Events land in the bucket `aw-watcher-steam_<hostname>` (type
 (`currently-playing-game` and `game-id` match the original aw-watcher-steam so
 existing dashboards keep working; the rest are extras.)
 
+> **Known limitation — Proton / Windows games on Linux.** Native games (Linux, and
+> all games on Windows/macOS) are detected reliably. Windows games run through
+> **Proton** on Linux/Steam Deck are not: the game's `.exe` runs under the Proton/
+> wine loader, so the OS reports the loader's path rather than a path inside the
+> game's folder, and we intentionally don't inspect process command lines (see the
+> privacy section). To track Proton titles, enable the optional **Steam Web API
+> layer** below and set `disable_process_scan = true` — the API then reports your
+> own current game regardless of how it's launched. (When process scanning is left
+> on, the API layer only tracks friends, to avoid two sources fighting over the
+> game bucket.)
+
 ### Layer 2 — Steam Web API (optional)
 
 If you add a `[steam_api]` section to the config with an API key and your SteamID, the
