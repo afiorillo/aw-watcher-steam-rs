@@ -166,6 +166,13 @@ nix-shell --run 'cargo test'
 nix-shell --run 'cargo clippy --all-targets'
 ```
 
+## Contributing
+
+Contributions — including AI/LLM-assisted ones — are welcome. Note that **most of
+this codebase was written by Claude** (Anthropic's AI coding agent) and that review
+is best-effort. See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR, and
+[SECURITY.md](SECURITY.md) for the threat model and how to report vulnerabilities.
+
 ## License
 
 Licensed under the [GNU Affero General Public License v3.0 or later](LICENSE)
