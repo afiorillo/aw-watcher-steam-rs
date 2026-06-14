@@ -121,6 +121,13 @@ stops, or changes (at `info` level); per-tick heartbeats are logged at `debug`.
 Verbosity is controlled by the `RUST_LOG` environment variable (e.g.
 `RUST_LOG=debug`), or the `log_level` config key (see below).
 
+### Prebuilt binaries
+
+Each release publishes binaries for Linux (x86_64), macOS (Intel + Apple Silicon),
+and Windows (x86_64) on the
+[Releases page](https://github.com/afiorillo/aw-watcher-steam-rs/releases) —
+download, extract, and run.
+
 ### With Cargo
 
 ```sh
